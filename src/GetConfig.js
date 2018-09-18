@@ -1,15 +1,18 @@
-require('isomorphic-fetch')
+const fetch = require('node-fetch')
 
 class GetConfig {
 
-  getConfig(protocol, host, port, user, password) {
-    const now = new Date()
+  constructor(protocol, host, port, user, password) {
     port = port ? `:${port}` : ''
     this.user = user
     this.password = password
-    this.config = {}
-    return this.get(
-      this.auth(`${protocol}://${host}${port}/geoserver/rest/workspaces.json`), 
+    this.url = `${protocol}://${user}:${password}@${host}${port}/geoserver/rest/workspaces.json`
+  }
+
+  async fillConfig(config) {
+    this.config = config
+    await this.get(
+      this.url, 
       this.getWorkspaces, 
       this.config
     )
@@ -19,19 +22,22 @@ class GetConfig {
     return url.replace(/\:\/\//, `://${this.user}:${this.password}@`)
   }
 
-  get(url, callback, parent) {
-    return fetch(url).then(response => {
-      return response.json()
-    }).then(result => {
-      callback.call(this, result, parent)
-    }).catch(error => {
-      console.warn('=====================================')
-      console.error(url)
-      console.error(callback)
-      console.error(parent)
-      console.error(error)
-      console.warn('=====================================')
+  error(url, callback, parent, error) {
+    console.warn('=====================================')
+    console.error(url)
+    console.error(callback)
+    console.error(parent)
+    console.error(error)
+    console.warn('=====================================')
+    process.exit(1)
+  }
+
+  async get(url, callback, parent) {    
+    const response = await fetch(url).catch(error => {
+      this.error(url, callback, parent, error)
     })
+    const result = await response.json()
+    callback.call(this, result, parent)
   }
 
   getWorkspaces(result, config) {
@@ -78,4 +84,4 @@ class GetConfig {
 
 }
 
-export default GetConfig
+module.exports = GetConfig
