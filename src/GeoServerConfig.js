@@ -11,34 +11,14 @@ class GetConfig {
     this.url = `${protocol}://${user}:${password}@${host}${port}/geoserver/rest/workspaces.json`
   }
 
-  fillConfig(config) {
+  getConfig() {
     this.requestCount = 0
-    this.config = config
+    this.config = {}
     return new Promise(
       resolve => {
-        this.get(
-          resolve,
-          this.url, 
-          this.getWorkspaces, 
-          this.config
-        )
-  
+        this.get(resolve, this.url, this.getWorkspaces, this.config)
       }
     )
-  }
-
-  auth(url) {
-    return url.replace(/\:\/\//, `://${this.user}:${this.password}@`)
-  }
-
-  error(url, callback, parent, error) {
-    console.warn('=====================================')
-    console.error(url)
-    console.error(callback)
-    console.error(parent)
-    console.error(error)
-    console.warn('=====================================')
-    process.exit(1)
   }
 
   get(resolve, url, callback, parent) {
@@ -108,6 +88,20 @@ class GetConfig {
     return resolve
   }
 
+  auth(url) {
+    return url.replace(/\:\/\//, `://${this.user}:${this.password}@`)
+  }
+
+  error(url, callback, parent, error) {
+    console.warn('=====================================')
+    console.error(url)
+    console.error(callback)
+    console.error(parent)
+    console.error(error)
+    console.warn('=====================================')
+    process.exit(1)
+  }
+  
 }
 
 module.exports = GetConfig

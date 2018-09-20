@@ -1,18 +1,21 @@
-  const GetConfig = require('./src/GetConfig')
-  require('dotenv').config()
+const fs = require('fs')
+const GeoServerConfig = require('./src/GeoServerConfig')
+require('dotenv').config()
 
-  const getConfig = new GetConfig(
-    process.env.GEOSERVER_PROTOCOL,
-    process.env.GEOSERVER_HOST,
-    process.env.GEOSERVER_PORT,
-    process.env.GEOSERVER_USER,
-    process.env.GEOSERVER_PASSWORD
-  )
+const geoServerConfig = new GeoServerConfig(
+  process.env.GEOSERVER_PROTOCOL,
+  process.env.GEOSERVER_HOST,
+  process.env.GEOSERVER_PORT,
+  process.env.GEOSERVER_USER,
+  process.env.GEOSERVER_PASSWORD
+)
 
-  const config = {}
-  getConfig.fillConfig(config).then(config => {
-    console.warn(config)
-  })
+geoServerConfig.getConfig().then(config => {
+  console.warn(config)
+  fs.writeFileSync('config.json', JSON.stringify(config, null, 2))
+  console.warn('')
+  console.warn('config written to config.json')
+})
   
 // (async () => {
 //   const fetch = require('node-fetch')
