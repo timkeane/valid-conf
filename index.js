@@ -1,4 +1,3 @@
-(async () => {
   const GetConfig = require('./src/GetConfig')
   require('dotenv').config()
 
@@ -11,14 +10,10 @@
   )
 
   const config = {}
-  await getConfig.fillConfig(config)
-  console.warn(config)
-
-  setTimeout(() => {
-    console.warn(JSON.stringify(config, null, 2))
-  }, 10000)
-})()
-
+  getConfig.fillConfig(config).then(config => {
+    console.warn(config)
+  })
+  
 // (async () => {
 //   const fetch = require('node-fetch')
 //   const request = async () => {

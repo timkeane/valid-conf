@@ -1,5 +1,7 @@
 const fetch = require('node-fetch')
 
+require('babel-polyfill')
+
 class GetConfig {
 
   constructor(protocol, host, port, user, password) {
@@ -9,12 +11,19 @@ class GetConfig {
     this.url = `${protocol}://${user}:${password}@${host}${port}/geoserver/rest/workspaces.json`
   }
 
-  async fillConfig(config) {
+  fillConfig(config) {
+    this.requestCount = 0
     this.config = config
-    await this.get(
-      this.url, 
-      this.getWorkspaces, 
-      this.config
+    return new Promise(
+      resolve => {
+        this.get(
+          resolve,
+          this.url, 
+          this.getWorkspaces, 
+          this.config
+        )
+  
+      }
     )
   }
 
@@ -32,54 +41,71 @@ class GetConfig {
     process.exit(1)
   }
 
-  async get(url, callback, parent) {    
-    const response = await fetch(url).catch(error => {
-      this.error(url, callback, parent, error)
-    })
-    const result = await response.json()
-    callback.call(this, result, parent)
+  get(resolve, url, callback, parent) {
+    this.requestCount++
+    fetch(url)
+      .then(response => {
+        return response.json()
+      })
+      .then(result => {
+        callback.call(this, resolve, result, parent)
+        this.requestCount--
+        if (this.requestCount === 0) {
+          resolve(this.config)
+        }
+      })
+      .catch(error => {
+        this.error(url, callback, parent, error)
+      })
+    return resolve
   }
 
-  getWorkspaces(result, config) {
+  getWorkspaces(resolve, result, config) {
     config.workspaces = {}
     result.workspaces.workspace.forEach(workspace => {
-      this.get(this.auth(workspace.href), this.gotWorkspace, config.workspaces)
+      this.get(resolve, this.auth(workspace.href), this.gotWorkspace, config.workspaces)
     })
+    return resolve
   }
 
-  gotWorkspace(result, workspaces) {
+  gotWorkspace(resolve, result, workspaces) {
     const workspace = result.workspace
     workspaces[workspace.name] = workspace
-    this.get(this.auth(workspace.dataStores), this.getDataStores, workspace)
+    this.get(resolve, this.auth(workspace.dataStores), this.getDataStores, workspace)
+    return resolve
   }
 
-  getDataStores(result, workspace) {
+  getDataStores(resolve, result, workspace) {
     workspace.dataStores = {}
     if (result.dataStores.dataStore) {
       result.dataStores.dataStore.forEach(dataStore => {
-        this.get(this.auth(dataStore.href), this.gotDataStore, workspace.dataStores)
+        this.get(resolve, this.auth(dataStore.href), this.gotDataStore, workspace.dataStores)
       })
     }
+    return resolve
   }
 
-  gotDataStore(result, dataStores) {
+  gotDataStore(resolve, result, dataStores) {
     const dataStore = result.dataStore
     dataStores[dataStore.name] = dataStore
-    this.get(this.auth(dataStore.featureTypes), this.getFeatureTypes, dataStore)
+    this.get(resolve, this.auth(dataStore.featureTypes), this.getFeatureTypes, dataStore)
+    return resolve
   }
 
-  getFeatureTypes(result, dataStore) {
+  getFeatureTypes(resolve, result, dataStore) {
     dataStore.featureTypes = {}
     if (result.featureTypes.featureType) {
       result.featureTypes.featureType.forEach(featureType => {
-        this.get(this.auth(featureType.href), this.gotFeatureType, dataStore.featureTypes)
+        this.get(resolve, this.auth(featureType.href), this.gotFeatureType, dataStore.featureTypes)
       })
     }
+    return resolve
   }
 
-  gotFeatureType(result, featureTypes) {
+  gotFeatureType(resolve, result, featureTypes) {
     const featureType = result.featureType
     featureTypes[featureType.name] = featureType
+    return resolve
   }
 
 }
